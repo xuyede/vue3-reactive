@@ -1,0 +1,11 @@
+{
+  "name": "vue3-reactive",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/xuyede/vue3-reactive.git",
+  "author": "deye <will3virgo@163.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  }
+}
