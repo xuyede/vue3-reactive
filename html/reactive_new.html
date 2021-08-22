@@ -1,0 +1,71 @@
+<script>
+  const targetMap = new WeakMap();
+  let activeEffect = null;
+
+  function watchEffect(effect) {
+    activeEffect = effect;
+    effect();
+    activeEffect = null;
+  }
+
+  function track(target, key) {
+    if (activeEffect) {
+      let depsMap = targetMap.get(target);
+      if (!depsMap) {
+        targetMap.set(target, (depsMap = new Map()));
+      }
+      let dep = depsMap.get(key);
+      if (!dep) {
+        depsMap.set(key, (dep = new Set()));
+      }
+
+      dep.add(activeEffect);
+    }
+  }
+
+  function trigger(target, key) {
+    let depsMap = targetMap.get(target);
+    if (!depsMap) return;
+
+    let dep = depsMap.get(key);
+    if (dep) {
+      dep.forEach((effect) => {
+        effect();
+      });
+    }
+  }
+
+  const reactiveHandler = {
+    get(target, key, recevier) {
+      track(target, key);
+      return Reflect.get(target, key, recevier);
+    },
+    set(target, key, value, recevier) {
+      let oldValue = target[key];
+      let result = Reflect.set(target, key, value, recevier);
+      if (result && oldValue !== value) {
+        trigger(target, key);
+      }
+      return result;
+    },
+  };
+
+  function reactive(raw) {
+    return new Proxy(raw, reactiveHandler);
+  }
+
+  let product = reactive({
+    price: 2,
+    quantity: 5,
+  });
+
+  watchEffect(() => {
+    total = product.price * product.quantity;
+  });
+
+  console.log(`total is ${total}`); // 10
+
+  product.quantity = 10;
+
+  console.log(`total is ${total}`); // 20
+</script>

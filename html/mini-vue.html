@@ -4,22 +4,24 @@
   // vdom
   function h(tag, props, children) {
     if (!children) {
-      children = props
-      props = null
+      children = props;
+      props = null;
     }
 
     return {
-      tag, props, children
-    }
+      tag,
+      props,
+      children,
+    };
   }
 
   function mount(vnode, container) {
-    const el = vnode.el = document.createElement(vnode.tag)
+    const el = (vnode.el = document.createElement(vnode.tag));
 
     if (vnode.props) {
       for (const key in vnode.props) {
         const value = vnode.props[key];
-        if (key.startsWith('on')) {
+        if (key.startsWith("on")) {
           el.addEventListener(key.slice(2).toLowerCase(), value);
         } else {
           el.setAttribute(key, value);
@@ -28,27 +30,27 @@
     }
 
     if (vnode.children) {
-      if (typeof vnode.children === 'string') {
+      if (typeof vnode.children === "string") {
         el.textContent = vnode.children;
       } else {
         // array
-        vnode.children.forEach(child => {
+        vnode.children.forEach((child) => {
           mount(child, el);
-        })
+        });
       }
     }
 
-    container.appendChild(el)
+    container.appendChild(el);
   }
 
   function patch(n1, n2) {
-    const el = n2.el = n1.el;
+    const el = (n2.el = n1.el);
 
     if (n1.tag === n2.tag) {
       // props
-      const oldProps = n1.props || {}
-      const newProps = n2.props || {}
-      
+      const oldProps = n1.props || {};
+      const newProps = n2.props || {};
+
       for (const key in newProps) {
         const oldValue = oldProps[key];
         const newValue = newProps[key];
@@ -67,18 +69,18 @@
       const oldChildren = n1.children;
       const newChildren = n2.children;
 
-      if (typeof newChildren === 'string') {
-        if (typeof oldChildren === 'string') {
+      if (typeof newChildren === "string") {
+        if (typeof oldChildren === "string") {
           el.textContent = newChildren;
         } else {
           el.textContent = newChildren;
         }
       } else {
-        if (typeof oldChildren === 'string') {
+        if (typeof oldChildren === "string") {
           el.innerHTML = null;
-          newChildren.forEach(child => {
+          newChildren.forEach((child) => {
             mount(child, el);
-          })
+          });
         } else {
           const commonLength = Math.min(oldChildren.length, newChildren.length);
           for (let i = 0; i < commonLength; i++) {
@@ -88,13 +90,13 @@
           }
 
           if (oldChildren.length > newChildren.length) {
-            oldChildren.slice(newChildren.length).forEach(child => {
+            oldChildren.slice(newChildren.length).forEach((child) => {
               el.removeChild(child.el);
             });
           } else if (oldChildren.length < newChildren.length) {
-            newChildren.slice(oldChildren.length).forEach(child => {
+            newChildren.slice(oldChildren.length).forEach((child) => {
               mount(child, el);
-            })
+            });
           }
         }
       }
@@ -104,18 +106,18 @@
   }
 
   // reactive
-  const targetMap = new WeakMap()
-  let activeEffect = null
+  const targetMap = new WeakMap();
+  let activeEffect = null;
 
   function track(target, key) {
     if (activeEffect) {
       let depsMap = targetMap.get(target);
       if (!depsMap) {
-        targetMap.set(target, ( depsMap = new Map() ))
+        targetMap.set(target, (depsMap = new Map()));
       }
-      let dep = depsMap.get(key)
+      let dep = depsMap.get(key);
       if (!dep) {
-        depsMap.set(key, ( dep = new Set() ))
+        depsMap.set(key, (dep = new Set()));
       }
 
       dep.add(activeEffect);
@@ -124,67 +126,86 @@
 
   function trigger(target, key) {
     let depsMap = targetMap.get(target);
-    if (!depsMap) return
-    let dep = depsMap.get(key)
+    if (!depsMap) return;
+    let dep = depsMap.get(key);
     if (dep) {
-      dep.forEach(effect => {
-        effect()
-      })
+      dep.forEach((effect) => {
+        effect();
+      });
     }
   }
 
   function watchEffect(eff) {
-    activeEffect = eff
-    activeEffect()
-    activeEffect = null
+    activeEffect = eff;
+    activeEffect();
+    activeEffect = null;
   }
 
   const proxyHandler = {
     get(target, key, receiver) {
-      track(target, key)
-      return Reflect.get(target, key, receiver)
+      track(target, key);
+      return Reflect.get(target, key, receiver);
     },
     set(target, key, value, receiver) {
       const oldValue = target[key];
-      const result = Reflect.set(target, key, value, receiver)
+      const result = Reflect.set(target, key, value, receiver);
       if (result && oldValue != value) {
-        trigger(target, key)
+        trigger(target, key);
       }
-      return result
-    }
-  }
+      return result;
+    },
+  };
 
   function reactive(raw) {
-    return new Proxy(raw, proxyHandler)
+    return new Proxy(raw, proxyHandler);
   }
 
   const App = {
     data: reactive({
-      count: 0
+      count: 0,
     }),
     render() {
-      return h('div', {
-        onClick: () => this.data.count++
-      }, String(this.data.count))
-    }
-  }
+      return h(
+        "div",
+        {
+          onClick: () => this.data.count++,
+        },
+        String(this.data.count)
+      );
+    },
+  };
 
   function mountApp(App, container) {
-    let isMounted = false
-    let oldVnode
+    let isMounted = false;
+    let oldVnode;
 
     watchEffect(() => {
       if (!isMounted) {
-        oldVnode = App.render()
-        mount(oldVnode, container)
-        isMounted = true
-      } {
-        let newVnode = App.render()
-        patch(oldVnode, newVnode)
-        oldVnode = newVnode
+        oldVnode = App.render();
+        mount(oldVnode, container);
+        isMounted = true;
       }
-    })
+      {
+        let newVnode = App.render();
+        patch(oldVnode, newVnode);
+        oldVnode = newVnode;
+      }
+    });
   }
 
-  mountApp(App, document.getElementById('app'));
+  function createApp(App) {
+    return {
+      mount(elTag) {
+        let container = null;
+        if (typeof elTag === "string") {
+          container = document.querySelector(elTag);
+        } else {
+          container = elTag;
+        }
+        mountApp(App, container);
+      },
+    };
+  }
+
+  createApp(App).mount("#app");
 </script>

@@ -1,6 +1,10 @@
 <style>
-  .red { color: red }
-  .green { color: green }
+  .red {
+    color: red;
+  }
+  .green {
+    color: green;
+  }
 </style>
 
 <div id="app"></div>
@@ -8,17 +12,19 @@
 <script>
   function h(tag, props, children) {
     if (!children) {
-      children = props
-      props = null
+      children = props;
+      props = null;
     }
 
     return {
-      tag, props, children
-    }
+      tag,
+      props,
+      children,
+    };
   }
 
   function mount(vnode, container) {
-    const el = vnode.el = document.createElement(vnode.tag)
+    const el = (vnode.el = document.createElement(vnode.tag));
 
     if (vnode.props) {
       for (const key in vnode.props) {
@@ -28,34 +34,34 @@
     }
 
     if (vnode.children) {
-      if (typeof vnode.children === 'string') {
+      if (typeof vnode.children === "string") {
         el.textContent = vnode.children;
       } else {
         // array
-        vnode.children.forEach(child => {
+        vnode.children.forEach((child) => {
           mount(child, el);
-        })
+        });
       }
     }
 
-    container.appendChild(el)
+    container.appendChild(el);
   }
 
-  const vdom = h('div', { class: 'red' }, [
-    h('span', null, 'hello'),
-    h('span', null, 'world'),
-  ])
+  const vdom = h("div", { class: "red" }, [
+    h("span", null, "hello"),
+    h("span", null, "world"),
+  ]);
 
-  mount(vdom, document.getElementById('app'));
+  mount(vdom, document.getElementById("app"));
 
   function patch(n1, n2) {
-    const el = n2.el = n1.el;
+    const el = (n2.el = n1.el);
 
     if (n1.tag === n2.tag) {
       // props
-      const oldProps = n1.props || {}
-      const newProps = n2.props || {}
-      
+      const oldProps = n1.props || {};
+      const newProps = n2.props || {};
+
       for (const key in newProps) {
         const oldValue = oldProps[key];
         const newValue = newProps[key];
@@ -74,18 +80,18 @@
       const oldChildren = n1.children;
       const newChildren = n2.children;
 
-      if (typeof newChildren === 'string') {
-        if (typeof oldChildren === 'string') {
+      if (typeof newChildren === "string") {
+        if (typeof oldChildren === "string") {
           el.textContent = newChildren;
         } else {
           el.textContent = newChildren;
         }
       } else {
-        if (typeof oldChildren === 'string') {
+        if (typeof oldChildren === "string") {
           el.innerHTML = null;
-          newChildren.forEach(child => {
+          newChildren.forEach((child) => {
             mount(child, el);
-          })
+          });
         } else {
           const commonLength = Math.min(oldChildren.length, newChildren.length);
           for (let i = 0; i < commonLength; i++) {
@@ -95,25 +101,39 @@
           }
 
           if (oldChildren.length > newChildren.length) {
-            oldChildren.slice(newChildren.length).forEach(child => {
+            oldChildren.slice(newChildren.length).forEach((child) => {
               el.removeChild(child.el);
             });
           } else if (oldChildren.length < newChildren.length) {
-            newChildren.slice(oldChildren.length).forEach(child => {
+            newChildren.slice(oldChildren.length).forEach((child) => {
               mount(child, el);
-            })
+            });
           }
         }
       }
     } else {
-      // replace
+      // replaceWith
+      const newDom = document.createElement(n2.tag);
+      const newProps = n2.props || {};
+
+      for (const key in newProps) {
+        newDom.setAttribute(key, newProps[key]);
+      }
+
+      const newChildren = n2.children;
+      if (typeof newChildren === "string") {
+        newDom.textContent = newChildren;
+      } else {
+        newChildren.forEach((child) => {
+          mount(child, newDom);
+        });
+      }
+
+      n1.el.replaceWith(newDom);
     }
   }
 
-  const newVdom = h('div', { class: 'red', id: 123 }, [
-    h('span', null, 'change!'),
-    h('span', null, 'success!')
-  ])
+  const newVdom = h("p", { class: "green" }, [h("span", null, "change!")]);
 
-
+  patch(vdom, newVdom);
 </script>
